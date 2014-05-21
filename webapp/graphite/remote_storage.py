@@ -246,24 +246,34 @@ class RemoteReader(object):
 class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
 
-  def connect(self):
-    msg = "getaddrinfo returns an empty list"
-    for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
-      af, socktype, proto, canonname, sa = res
-      try:
-        self.sock = socket.socket(af, socktype, proto)
-        try:
-          self.sock.settimeout( float(self.timeout) ) # default self.timeout is an object() in 2.6
-        except:
-          pass
-        self.sock.connect(sa)
-        self.sock.settimeout(None)
-      except socket.error:
-        msg = sys.exc_info()[1]
-        if self.sock:
-          self.sock.close()
-          self.sock = None
-          continue
-      break
-    if not self.sock:
-      raise socket.error(msg)
+    def request(self, method, url, body=None, headers={}):
+        if headers is None:
+            headers = {}
+        if 'Cookie' not in headers or headers['Cookie'] == '':
+            headers['Cookie'] = "authtoken=foobar"
+        else:
+            headers['Cookie'] += "; " + "authtoken=foobar"
+        super(self, method, url, body, headers)
+
+
+    def connect(self):
+        msg = "getaddrinfo returns an empty list"
+        for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                try:
+                    self.sock.settimeout( float(self.timeout) ) # default self.timeout is an object() in 2.6
+                except:
+                    pass
+                self.sock.connect(sa)
+                self.sock.settimeout(None)
+            except socket.error:
+                msg = sys.exc_info()[1]
+                if self.sock:
+                    self.sock.close()
+                    self.sock = None
+                    continue
+            break
+        if not self.sock:
+            raise socket.error(msg)
