@@ -18,6 +18,7 @@ class RemoteStore(object):
   available = property(lambda self: time.time() - self.lastFailure > settings.REMOTE_RETRY_DELAY)
 
   def __init__(self, host):
+    log.info("RemoteStore: %s" % host)
     self.host = host
 
   def find(self, query):
@@ -97,6 +98,7 @@ class FindRequest(object):
         response = self.connection.getresponse()
         assert response.status == 200, "received error response %s - %s" % (response.status, response.reason)
         result_data = response.read()
+        log.info("Got response: %s" % result_data)
         results = unpickle.loads(result_data)
 
       except:
@@ -245,35 +247,34 @@ class RemoteReader(object):
 
 class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
+  authcookie = 'authtoken="%s"' % (os.getenv("authtoken"))
 
-    def request(self, method, url, body=None, headers={}):
-        if headers is None:
-            headers = {}
-        if 'Cookie' not in headers or headers['Cookie'] == '':
-            headers['Cookie'] = "authtoken=foobar"
-        else:
-            headers['Cookie'] += "; " + "authtoken=foobar"
-        super(self, method, url, body, headers)
+  def request(self, method, url, body=None, headers={}):
+    if headers is None:
+      headers = {}
+    headers['Cookie'] = self.authcookie
+    headers['User-Agent'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
+    httplib.HTTPConnection.request(self, method, url, body=body, headers=headers)
 
 
-    def connect(self):
-        msg = "getaddrinfo returns an empty list"
-        for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
-            try:
-                self.sock = socket.socket(af, socktype, proto)
-                try:
-                    self.sock.settimeout( float(self.timeout) ) # default self.timeout is an object() in 2.6
-                except:
-                    pass
-                self.sock.connect(sa)
-                self.sock.settimeout(None)
-            except socket.error:
-                msg = sys.exc_info()[1]
-                if self.sock:
-                    self.sock.close()
-                    self.sock = None
-                    continue
-            break
-        if not self.sock:
-            raise socket.error(msg)
+  def connect(self):
+    msg = "getaddrinfo returns an empty list"
+    for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+      af, socktype, proto, canonname, sa = res
+      try:
+        self.sock = socket.socket(af, socktype, proto)
+        try:
+          self.sock.settimeout( float(self.timeout) ) # default self.timeout is an object() in 2.6
+        except:
+          pass
+        self.sock.connect(sa)
+        self.sock.settimeout(None)
+      except socket.error:
+        msg = sys.exc_info()[1]
+        if self.sock:
+          self.sock.close()
+          self.sock = None
+          continue
+      break
+    if not self.sock:
+      raise socket.error(msg)
