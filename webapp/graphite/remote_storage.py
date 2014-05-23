@@ -256,6 +256,7 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
   useragent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
   orig_host = None
+  proxy_port = 81
 
   ## copypaste from zuisite
   def _generate_signature_for_cookie(self, username, roles, timestamp, user_agent):
@@ -283,7 +284,7 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
     if settings.USE_PROXY:
       host = "127.0.0.1"
       log.info("init/proxy: %s, %s" % (self.orig_host, host))
-    return httplib.HTTPConnection.__init__(self, host)
+    return httplib.HTTPConnection.__init__(self, host, port=self.proxy_port)
 
   def request(self, method, url, body=None, headers={}):
     log.info("request: %s / %s / %s" % (method, url, str(headers)))
