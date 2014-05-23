@@ -69,6 +69,7 @@ def getProfileByUsername(username):
 
 
 def is_local_interface(host):
+  return False
   if ':' in host:
     host = host.split(':',1)[0]
 
