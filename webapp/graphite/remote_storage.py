@@ -10,6 +10,7 @@ from graphite.node import LeafNode, BranchNode
 from graphite.readers import FetchInProgress
 from graphite.logger import log
 from graphite.util import unpickle
+from graphite.intervals import Interval, IntervalSet
 
 
 
