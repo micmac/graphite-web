@@ -255,13 +255,13 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
 
   ## copypaste from zuisite
-  def _generate_signature_for_cookie(username, roles, timestamp, user_agent):
+  def _generate_signature_for_cookie(self, username, roles, timestamp, user_agent):
     raw_data = '%s-%s-%s-%s' % (username, roles, timestamp, user_agent)
     signature = sha1('%s%s' % (settings.GODAUTH_COOKIE_SECRET, raw_data)).hexdigest()
     return signature
 
 
-  def generate_cookie_data(username, roles, user_agent):
+  def generate_cookie_data(self, username, roles, user_agent):
     timestamp = int(time.time())
     if 'AppleWebKit' in user_agent:
       # We have to be compatible with the server side
