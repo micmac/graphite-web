@@ -11,6 +11,7 @@ from graphite.readers import FetchInProgress
 from graphite.logger import log
 from graphite.util import unpickle
 from graphite.intervals import Interval, IntervalSet
+from hashlib import sha1
 
 
 
