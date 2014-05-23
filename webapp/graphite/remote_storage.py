@@ -254,6 +254,7 @@ class RemoteReader(object):
 
 class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
+  useragent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
 
   ## copypaste from zuisite
   def _generate_signature_for_cookie(self, username, roles, timestamp, user_agent):
@@ -273,7 +274,7 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
 
 
   def generate_godauth_cookie(self):
-    return self.generate_cookie_data("graphitefe", "", "graphite")
+    return self.generate_cookie_data("graphitefe", "", self.useragent)
 
 
   def request(self, method, url, body=None, headers={}):
@@ -281,7 +282,7 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
     if headers is None:
       headers = {}
     headers['Cookie'] = authcookie
-    headers['User-Agent'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
+    headers['User-Agent'] = self.useragent
     log.info("authtoken = %s" % authcookie)
     httplib.HTTPConnection.request(self, method, url, body=body, headers=headers)
 
