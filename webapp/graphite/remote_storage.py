@@ -253,12 +253,33 @@ class RemoteReader(object):
 
 class HTTPConnectionWithTimeout(httplib.HTTPConnection):
   timeout = 30
-  authcookie = 'authtoken="%s"' % (os.getenv("authtoken"))
+
+  ## copypaste from zuisite
+  def _generate_signature_for_cookie(username, roles, timestamp, user_agent):
+    raw_data = '%s-%s-%s-%s' % (username, roles, timestamp, user_agent)
+    signature = sha1('%s%s' % (settings.GODAUTH_COOKIE_SECRET, raw_data)).hexdigest()
+    return signature
+
+
+  def generate_cookie_data(username, roles, user_agent):
+    timestamp = int(time.time())
+    if 'AppleWebKit' in user_agent:
+      # We have to be compatible with the server side
+      user_agent = 'StupidAppleWebkitHacksGRRR'
+    signature = self._generate_signature_for_cookie(username, roles, timestamp, user_agent)
+    signed_cookie_data = '%s-%s-%s-%s' % (username, roles, timestamp, signature)
+    return signed_cookie_data
+
+
+  def generate_godauth_cookie(self):
+    return self.generate_cookie_data("graphitefe", "", "graphite")
+
 
   def request(self, method, url, body=None, headers={}):
+    authcookie = 'authtoken="%s"' % self.generate_godauth_cookie()
     if headers is None:
       headers = {}
-    headers['Cookie'] = self.authcookie
+    headers['Cookie'] = authcookie
     headers['User-Agent'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
     log.info("authtoken = %s" % authcookie)
     httplib.HTTPConnection.request(self, method, url, body=body, headers=headers)
