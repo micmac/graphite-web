@@ -259,6 +259,7 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
       headers = {}
     headers['Cookie'] = self.authcookie
     headers['User-Agent'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'
+    log.info("authtoken = %s" % authcookie)
     httplib.HTTPConnection.request(self, method, url, body=body, headers=headers)
 
 
