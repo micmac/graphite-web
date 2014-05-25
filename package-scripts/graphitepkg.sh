@@ -1,10 +1,10 @@
 #!/bin/bash
 
 set -ex
-
-cd $(dirname $(dirname $0))
+scriptdir=$(dirname $0)
+cd $(dirname "$scriptdir")
 virtualenv --distribute virtualenv
 . virtualenv/bin/activate
 pip install -r requirements.txt
 
-./scripts/todeb.sh "$(date +%Y%m%d)"
+"$scriptdir/todeb.sh" "$(date +%Y%m%d)"
