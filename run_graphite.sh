@@ -17,4 +17,4 @@ mkdir -p "${GRAPHITE_STORAGE_DIR}/log/webapp" "$GRAPHITE_CONF_DIR"
 
 ln -sf "$GRAPHITE_LOCAL_SETTINGS" webapp/graphite/local_settings.py
 
-exec gunicorn --bind 0.0.0.0:8000 graphite.wsgi
+exec uwsgi --http-socket 0.0.0.0:8000 --workers 16 --module graphite.wsgi --immediate-uid www-data
