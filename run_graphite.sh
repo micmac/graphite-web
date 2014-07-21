@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 cd $(dirname $0)
 . virtualenv/bin/activate
 cd webapp
@@ -15,6 +17,6 @@ export ${!GRAPHITE_*}
 
 mkdir -p "${GRAPHITE_STORAGE_DIR}/log/webapp" "$GRAPHITE_CONF_DIR"
 
-ln -sf "$GRAPHITE_LOCAL_SETTINGS" webapp/graphite/local_settings.py
+ln -sf "$GRAPHITE_LOCAL_SETTINGS" graphite/local_settings.py
 
 exec uwsgi --http-socket 0.0.0.0:8000 --workers 16 --module graphite.wsgi --immediate-uid www-data
