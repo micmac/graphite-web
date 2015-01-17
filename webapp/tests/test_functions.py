@@ -1,9 +1,11 @@
 import copy
+import math
 from django.test import TestCase
 from mock import patch, call, MagicMock
 
 from graphite.render.datalib import TimeSeries
 from graphite.render import functions
+from graphite.render.functions import NormalizeEmptyResultError
 
 def return_greater(series, value):
     return [i for i in series if i is not None and i > value]
@@ -17,7 +19,7 @@ class FunctionsTest(TestCase):
         config = [20, 50, 30, 40]
         seriesList = [range(max_val) for max_val in config]
 
-        # Expect the test results to be returned in decending order
+        # Expect the test results to be returned in descending order
         expected = [
             [seriesList[1]],
             [seriesList[1], seriesList[3]],
@@ -265,6 +267,12 @@ class FunctionsTest(TestCase):
                 expected_value = original_value * multiplier
                 self.assertEqual(value, expected_value)
 
+    def test_normalize_empty(self):
+      try:
+        functions.normalize([])
+      except NormalizeEmptyResultError:
+        pass
+
     def _generate_mr_series(self):
         seriesList = [
             TimeSeries('group.server1.metric1',0,1,1,[None]),
@@ -295,3 +303,75 @@ class FunctionsTest(TestCase):
             results = functions.reduceSeries({}, copy.deepcopy(inputList), "mock", 2, "metric1","metric2" )
             self.assertEqual(results,expectedResult)
         self.assertEqual(mock.mock_calls, [call({},inputList[0]), call({},inputList[1])])
+
+    def test_pow(self):
+        seriesList = self._generate_series_list()
+        factor = 2
+        # Leave the original seriesList undisturbed for verification
+        results = functions.pow({}, copy.deepcopy(seriesList), factor)
+        for i, series in enumerate(results):
+            for counter, value in enumerate(series):
+                if value is None:
+                    continue
+                original_value = seriesList[i][counter]
+                expected_value = math.pow(original_value, factor)
+                self.assertEqual(value, expected_value)
+
+    def test_squareRoot(self):
+        seriesList = self._generate_series_list()
+        # Leave the original seriesList undisturbed for verification
+        results = functions.squareRoot({}, copy.deepcopy(seriesList))
+        for i, series in enumerate(results):
+            for counter, value in enumerate(series):
+                original_value = seriesList[i][counter]
+                if value is None:
+                    self.assertEqual(original_value, None)
+                    continue
+                expected_value = math.pow(original_value, 0.5)
+                self.assertEqual(value, expected_value)
+
+    def test_invert(self):
+        seriesList = self._generate_series_list()
+        # Leave the original seriesList undisturbed for verification
+        results = functions.invert({}, copy.deepcopy(seriesList))
+        for i, series in enumerate(results):
+            for counter, value in enumerate(series):
+                original_value = seriesList[i][counter]
+                if value is None:
+                    continue
+                expected_value = math.pow(original_value, -1)
+                self.assertEqual(value, expected_value)
+
+    def test_changed(self):
+        config = [
+            [[1,2,3,4,4,5,5,5,6,7], [0,1,1,1,0,1,0,0,1,1]],
+            [[None,None,None,None,0,0,0,None,None,1], [0,0,0,0,0,0,0,0,0,1]]
+        ]
+        for i, c in enumerate(config):
+            name = "collectd.test-db{0}.load.value".format(i + 1)
+            series = [TimeSeries(name,0,1,1,c[0])]
+            expected = [TimeSeries("changed(%s)" % name,0,1,1,c[1])]
+            result = functions.changed({}, series)
+            self.assertEqual(result, expected)
+
+    def test_multiplySeriesWithWildcards(self):
+        seriesList1 = [
+            TimeSeries('web.host-1.avg-response.value',0,1,1,[1,10,11]),
+            TimeSeries('web.host-2.avg-response.value',0,1,1,[2,20,21]),
+            TimeSeries('web.host-3.avg-response.value',0,1,1,[3,30,31]),
+            TimeSeries('web.host-4.avg-response.value',0,1,1,[4,40,41]),
+        ]
+        seriesList2 = [
+            TimeSeries('web.host-4.total-request.value',0,1,1,[4,8,12]),
+            TimeSeries('web.host-3.total-request.value',0,1,1,[3,7,11]),
+            TimeSeries('web.host-1.total-request.value',0,1,1,[1,5,9]),
+            TimeSeries('web.host-2.total-request.value',0,1,1,[2,6,10]),
+        ]
+        expectedResult = [
+            TimeSeries('web.host-1',0,1,1,[1,50,99]),
+            TimeSeries('web.host-2',0,1,1,[4,120,210]),
+            TimeSeries('web.host-3',0,1,1,[9,210,341]),
+            TimeSeries('web.host-4',0,1,1,[16,320,492]),
+        ]
+        results = functions.multiplySeriesWithWildcards({}, copy.deepcopy(seriesList1+seriesList2), 2,3)
+        self.assertEqual(results,expectedResult)

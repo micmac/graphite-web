@@ -15,9 +15,10 @@ limitations under the License."""
 import imp
 import os
 import socket
-import errno
 import time
 import sys
+import calendar
+import pytz
 from os.path import splitext, basename, relpath
 from shutil import move
 from tempfile import mkstemp
@@ -33,7 +34,6 @@ try:
 except ImportError:
   from StringIO import StringIO
 
-from os import environ
 from django.conf import settings
 from django.contrib.auth.models import User
 from graphite.account.models import Profile
@@ -53,6 +53,11 @@ if hasattr(json, 'read') and not hasattr(json, 'loads'):
   json.load = lambda file: json.read( file.read() )
   json.dump = lambda obj, file: file.write( json.write(obj) )
 
+def epoch(dt):
+  """
+  Returns the epoch timestamp of a timezone-aware datetime object.
+  """
+  return calendar.timegm(dt.astimezone(pytz.utc).timetuple())
 
 def getProfile(request, allowDefault=True):
   if request.user.is_authenticated():
@@ -143,7 +148,9 @@ if USING_CPICKLE:
   class SafeUnpickler(object):
     PICKLE_SAFE = {
       'copy_reg': set(['_reconstructor']),
-      '__builtin__': set(['object']),
+      '__builtin__': set(['object', 'list']),
+      'collections': set(['deque']),
+      'graphite.render.datalib': set(['TimeSeries']),
       'graphite.intervals': set(['Interval', 'IntervalSet']),
     }
 
@@ -167,7 +174,9 @@ else:
   class SafeUnpickler(pickle.Unpickler):
     PICKLE_SAFE = {
       'copy_reg': set(['_reconstructor']),
-      '__builtin__': set(['object']),
+      '__builtin__': set(['object', 'list']),
+      'collections': set(['deque']),
+      'graphite.render.datalib': set(['TimeSeries']),
       'graphite.intervals': set(['Interval', 'IntervalSet']),
     }
 

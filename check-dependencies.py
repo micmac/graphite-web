@@ -5,9 +5,9 @@ import sys
 # Simple python version test
 major,minor = sys.version_info[:2]
 py_version = sys.version.split()[0]
-if major != 2 or minor < 5:
+if major != 2 or minor < 6:
   # SystemExit defaults to returning 1 when printing a string to stderr
-  raise SystemExit("You are using python %s, but version 2.5 or greater is required" % py_version)
+  raise SystemExit("You are using python %s, but version 2.6 or greater is required" % py_version)
 
 required = 0
 optional = 0
@@ -107,6 +107,14 @@ except ImportError:
   except ImportError:
     sys.stderr.write("[REQUIRED] Unable to import either the 'json' or 'simplejson' module, at least one is required.\n")
     required += 1
+
+
+# Test for a pytz module
+try:
+  import pytz
+except ImportError:
+  print "[FATAL] Unable to import the 'pytz' module, do you have pytz installed for python %s?" % py_version
+  fatal += 1
 
 
 # Test for zope.interface
